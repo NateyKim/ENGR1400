@@ -1,0 +1,204 @@
+#define BrakePot A0
+#define PIN_SLIDE_POT_A A1
+#define gearshift A2
+#define CLK 2 
+#define DT 3
+
+int currentStateCLK;
+int lastStateCLK;
+int ts = 15;
+int universal = 0;
+int permaTurnFactor;
+volatile long counter = 0;
+volatile long temp = 0;
+
+void setup(){
+
+  pinMode(PIN_SLIDE_POT_A, INPUT);
+  pinMode(BrakePot, INPUT);
+  pinMode(gearshift, INPUT);
+
+	pinMode(CLK,INPUT_PULLUP);
+	pinMode(DT,INPUT_PULLUP);
+
+  attachInterrupt(0, ai0, RISING);
+  attachInterrupt(1, ai1, RISING);
+
+
+  Serial.begin(9600);
+
+  lastStateCLK = digitalRead(CLK);
+
+}
+
+
+void loop(){
+
+
+
+
+
+  int valueReturn = 20;
+  ///SLIDE POTENTIOMETER VALUES
+  int va = float(analogRead(PIN_SLIDE_POT_A))/100.0;
+  int gsval = analogRead(gearshift);
+  int Brake = analogRead(BrakePot);
+
+  if (gsval < 341){
+    valueReturn += 0;
+  }
+  if (gsval >= 341 && gsval < 682){
+    valueReturn += 100;
+  }
+  if (gsval >= 682 && gsval <= 1023){
+    valueReturn += 200;
+  }
+
+
+    if (va == 10){
+      valueReturn += 9;
+      if (Brake > 550){
+        valueReturn += 0;
+      }
+    }
+    if (va == 9){
+      valueReturn += 9;
+      if (Brake > 550){
+        valueReturn += 0;
+      }
+    }
+    if (va == 8){
+      valueReturn += 8;
+      if (Brake > 550){
+        valueReturn += 1;
+      }
+    }
+    if (va == 7){
+      valueReturn += 7;
+      if (Brake > 550){
+        valueReturn += 2;
+      }
+    }  
+    if (va == 6){
+      valueReturn += 6;
+      if (Brake > 550){
+        valueReturn += 3;
+      }
+    }
+    if (va == 5){
+      valueReturn += 5;
+      if (Brake > 550){
+        valueReturn += 4;
+      }
+    }
+    if (va == 4){
+      valueReturn += 4;
+      if (Brake > 550){
+        valueReturn += 5;
+      }
+    }
+    if(va == 3){
+      valueReturn += 3;
+      if (Brake > 550){
+        valueReturn += 6;
+      }
+    }
+    if (va == 2){
+      valueReturn += 2;
+      if (Brake > 550){
+        valueReturn += 7;
+      }
+    }
+    if (va == 1){
+      valueReturn += 1;
+      if (Brake > 550){
+        valueReturn += 8;
+      }
+    }
+    if (va == 0){
+      valueReturn += 0;
+      if (Brake > 550){
+        valueReturn += 9;
+      }
+    }   
+
+	currentStateCLK = digitalRead(CLK);  
+	if (currentStateCLK != lastStateCLK  && currentStateCLK == 1){
+		if (digitalRead(DT) != currentStateCLK) {
+			counter += -1;
+		} else {
+			counter += 1;
+		}
+    //Serial.println(valueReturn);
+    if (counter <-720) {
+      counter = 0;
+    }
+    if (counter >720) {
+      counter = 0;
+    }    
+  }
+
+    if (counter >= ts && counter < 2*ts){
+      permaTurnFactor = 10; ///small right
+    }
+    if (counter >= 2*ts && counter < 3*ts){
+      permaTurnFactor = 10; 
+    }
+    if (counter >= 3*ts  && counter < 4*ts){
+      permaTurnFactor = 20; 
+    }
+    if (counter >= 4*ts  && counter < 5*ts){
+      permaTurnFactor = 20;
+    }
+
+
+    if (counter < ts && counter > -ts){
+      permaTurnFactor = 0;
+    }
+
+    if (counter <= -ts && counter > -2*ts){
+      permaTurnFactor = -10;
+    }
+    if (counter <= -2*ts && counter > -3*ts){
+      permaTurnFactor = -10;
+    }
+    if (counter <= -3*ts && counter > -4*ts){
+      permaTurnFactor = -20;
+    }
+    if (counter <= -4*ts && counter > -5*ts){
+      permaTurnFactor = -20;
+    }
+
+  valueReturn += permaTurnFactor;
+
+    
+
+
+	lastStateCLK = currentStateCLK;
+  Serial.write(valueReturn);
+  //Serial.println(counter);
+  //Serial.println(valueReturn);
+  //Serial.println();
+  delay(3);
+}
+
+void ai0() {
+  // ai0 is activated if DigitalPin nr 2 is going from LOW to HIGH
+  // Check pin 3 to determine the direction
+  if(digitalRead(3)==LOW) {
+  counter++;
+  }else{
+  counter--;
+  }
+}
+
+
+void ai1() {
+  // ai0 is activated if DigitalPin nr 3 is going from LOW to HIGH
+  // Check with pin 2 to determine the direction
+  if(digitalRead(2)==LOW) {
+  counter--;
+  }else{
+  counter++;
+  }
+}
